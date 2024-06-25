@@ -10,9 +10,13 @@ log() {
 
 log "Script started"
 
+# Check if the script is running at all
+log "This is a test log to ensure the script is running."
+
 # Update the package list
 log "Updating package list..."
-if sudo apt-get update -qq; then
+sudo apt-get update -qq
+if [ $? -eq 0 ]; then
     log "Package list updated successfully"
 else
     log "Failed to update package list"
@@ -21,7 +25,8 @@ fi
 
 # Install required packages with a progress bar
 log "Installing required packages..."
-if sudo apt-get install -y golang-go caddy tailscale shellinabox; then
+sudo apt-get install -y golang-go caddy tailscale shellinabox
+if [ $? -eq 0 ]; then
     log "Packages installed successfully"
 else
     log "Failed to install required packages"
@@ -30,7 +35,8 @@ fi
 
 # Enable and start Tailscale, with interactive setup
 log "Starting Tailscale setup..."
-if sudo tailscale up; then
+sudo tailscale up
+if [ $? -eq 0 ]; then
     log "Tailscale started successfully"
 else
     log "Failed to start Tailscale"
@@ -39,14 +45,16 @@ fi
 
 # Download and install Go web application
 log "Setting up Go web application..."
-if mkdir -p ~/go/src/monitor; then
+mkdir -p ~/go/src/monitor
+if [ $? -eq 0 ]; then
     log "Go source directory created"
 else
     log "Failed to create Go source directory"
     exit 1
 fi
 
-if cd ~/go/src/monitor; then
+cd ~/go/src/monitor
+if [ $? -eq 0 ]; then
     log "Changed directory to Go source"
 else
     log "Failed to change directory to Go source"
@@ -88,9 +96,16 @@ func main() {
     http.ListenAndServe(":"+port, nil)
 }
 EOL
+if [ $? -eq 0 ]; then
+    log "Go application source code written"
+else
+    log "Failed to write Go application source code"
+    exit 1
+fi
 
 log "Building Go application..."
-if go build -o server main.go; then
+go build -o server main.go
+if [ $? -eq 0 ]; then
     log "Go application built successfully"
 else
     log "Failed to build Go application"
@@ -98,7 +113,8 @@ else
 fi
 
 log "Running Go application..."
-if nohup ./server &; then
+nohup ./server &
+if [ $? -eq 0 ]; then
     log "Go application started"
 else
     log "Failed to start Go application"
@@ -106,12 +122,12 @@ else
 fi
 
 log "Configuring Caddy..."
-if sudo tee /etc/caddy/Caddyfile > /dev/null <<EOL
+sudo tee /etc/caddy/Caddyfile > /dev/null <<EOL
 :80 {
     reverse_proxy /metrics localhost:8080
 }
 EOL
-then
+if [ $? -eq 0 ]; then
     log "Caddyfile configured"
 else
     log "Failed to configure Caddyfile"
@@ -119,7 +135,8 @@ else
 fi
 
 log "Starting Caddy server..."
-if sudo caddy run --config /etc/caddy/Caddyfile &; then
+sudo caddy run --config /etc/caddy/Caddyfile &
+if [ $? -eq 0 ]; then
     log "Caddy server started"
 else
     log "Failed to start Caddy server"
@@ -127,7 +144,8 @@ else
 fi
 
 # Output the server address
-if tailscale_ip=$(tailscale ip -4); then
+tailscale_ip=$(tailscale ip -4)
+if [ $? -eq 0 ]; then
     log "Setup complete. Access your server metrics at http://$tailscale_ip:80/metrics"
 else
     log "Failed to get Tailscale IP"
