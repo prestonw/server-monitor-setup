@@ -61,11 +61,11 @@ else
     exit 1
 fi
 
-# Enable and start Tailscale, with interactive setup
+# Enable and start Tailscale, with specific settings to keep local network access
 log "Starting Tailscale setup..."
-sudo tailscale up
+sudo tailscale up --accept-routes --advertise-exit-node=false --advertise-routes=<local-network-range>
 if [ $? -eq 0 ]; then
-    log "Tailscale started successfully"
+    log "Tailscale started successfully with local network access maintained"
 else
     log "Failed to start Tailscale"
     exit 1
