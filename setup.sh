@@ -1,38 +1,57 @@
 #!/bin/bash
 
-# Function to display a progress bar
-show_progress() {
-    echo -ne "Installing packages: ["
-    while kill -0 $1 2> /dev/null; do
-        echo -ne "#"
-        sleep 1
-    done
-    echo -ne "]\n"
+# Log file
+LOGFILE="/tmp/setup.log"
+
+# Function to log messages
+log() {
+    echo "$(date +'%Y-%m-%d %H:%M:%S') - $1" | tee -a $LOGFILE
 }
 
-log() {
-    echo "$(date +'%Y-%m-%d %H:%M:%S') - $1"
-}
+log "Script started"
 
 # Update the package list
 log "Updating package list..."
-sudo apt-get update -qq || { log "Failed to update package list"; exit 1; }
+if sudo apt-get update -qq; then
+    log "Package list updated successfully"
+else
+    log "Failed to update package list"
+    exit 1
+fi
 
 # Install required packages with a progress bar
 log "Installing required packages..."
-{
-    sudo apt-get install -y golang-go caddy tailscale shellinabox
-} & show_progress $!
-wait $! || { log "Failed to install required packages"; exit 1; }
+if sudo apt-get install -y golang-go caddy tailscale shellinabox; then
+    log "Packages installed successfully"
+else
+    log "Failed to install required packages"
+    exit 1
+fi
 
 # Enable and start Tailscale, with interactive setup
 log "Starting Tailscale setup..."
-sudo tailscale up || { log "Failed to start Tailscale"; exit 1; }
+if sudo tailscale up; then
+    log "Tailscale started successfully"
+else
+    log "Failed to start Tailscale"
+    exit 1
+fi
 
 # Download and install Go web application
 log "Setting up Go web application..."
-mkdir -p ~/go/src/monitor || { log "Failed to create Go source directory"; exit 1; }
-cd ~/go/src/monitor || { log "Failed to change directory to Go source"; exit 1; }
+if mkdir -p ~/go/src/monitor; then
+    log "Go source directory created"
+else
+    log "Failed to create Go source directory"
+    exit 1
+fi
+
+if cd ~/go/src/monitor; then
+    log "Changed directory to Go source"
+else
+    log "Failed to change directory to Go source"
+    exit 1
+fi
 
 log "Writing Go application source code..."
 cat <<EOL > main.go
@@ -71,21 +90,48 @@ func main() {
 EOL
 
 log "Building Go application..."
-go build -o server main.go || { log "Failed to build Go application"; exit 1; }
+if go build -o server main.go; then
+    log "Go application built successfully"
+else
+    log "Failed to build Go application"
+    exit 1
+fi
 
 log "Running Go application..."
-nohup ./server & || { log "Failed to start Go application"; exit 1; }
+if nohup ./server &; then
+    log "Go application started"
+else
+    log "Failed to start Go application"
+    exit 1
+fi
 
 log "Configuring Caddy..."
-sudo tee /etc/caddy/Caddyfile > /dev/null <<EOL
+if sudo tee /etc/caddy/Caddyfile > /dev/null <<EOL
 :80 {
     reverse_proxy /metrics localhost:8080
 }
 EOL
+then
+    log "Caddyfile configured"
+else
+    log "Failed to configure Caddyfile"
+    exit 1
+fi
 
 log "Starting Caddy server..."
-sudo caddy run --config /etc/caddy/Caddyfile & || { log "Failed to start Caddy server"; exit 1; }
+if sudo caddy run --config /etc/caddy/Caddyfile &; then
+    log "Caddy server started"
+else
+    log "Failed to start Caddy server"
+    exit 1
+fi
 
 # Output the server address
-tailscale_ip=$(tailscale ip -4) || { log "Failed to get Tailscale IP"; exit 1; }
-log "Setup complete. Access your server metrics at http://$tailscale_ip:80/metrics"
+if tailscale_ip=$(tailscale ip -4); then
+    log "Setup complete. Access your server metrics at http://$tailscale_ip:80/metrics"
+else
+    log "Failed to get Tailscale IP"
+    exit 1
+fi
+
+log "Script finished"
