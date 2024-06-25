@@ -1,17 +1,34 @@
 #!/bin/bash
 
+# Function to display a progress bar
+show_progress() {
+    echo -ne "Installing packages: ["
+    while kill -0 $1 2> /dev/null; do
+        echo -ne "#"
+        sleep 1
+    done
+    echo -ne "]\n"
+}
+
 # Update the package list
-sudo apt-get update
+echo "Updating package list..."
+sudo apt-get update -qq
 
-# Install required packages
-sudo apt-get install -y golang-go caddy tailscale shellinabox
+# Install required packages with a progress bar
+echo "Installing required packages..."
+{
+    sudo apt-get install -y golang-go caddy tailscale shellinabox
+} & show_progress $!
 
-# Enable and start Tailscale
+# Enable and start Tailscale, with interactive setup
+echo "Starting Tailscale setup..."
 sudo tailscale up
 
 # Download and install Go web application
+echo "Setting up Go web application..."
 mkdir -p ~/go/src/monitor
 cd ~/go/src/monitor
+
 cat <<EOL > main.go
 package main
 
@@ -48,21 +65,25 @@ func main() {
 EOL
 
 # Build the Go application
+echo "Building Go application..."
 go build -o server main.go
 
 # Run the Go application in the background
+echo "Running Go application..."
 nohup ./server &
 
 # Create Caddyfile
-sudo cat <<EOL > /etc/caddy/Caddyfile
+echo "Configuring Caddy..."
+sudo tee /etc/caddy/Caddyfile > /dev/null <<EOL
 :80 {
     reverse_proxy /metrics localhost:8080
 }
 EOL
 
 # Run Caddy with the Caddyfile
-sudo caddy run --config /etc/caddy/Caddyfile
+echo "Starting Caddy server..."
+sudo caddy run --config /etc/caddy/Caddyfile &
 
 # Output the server address
-tailscale ip -4
-echo "Setup complete. Access your server metrics at http://$(tailscale ip -4):80/metrics"
+tailscale_ip=$(tailscale ip -4)
+echo "Setup complete. Access your server metrics at http://$tailscale_ip:80/metrics"
