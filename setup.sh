@@ -63,7 +63,7 @@ fi
 
 # Enable and start Tailscale, with specific settings to keep local network access
 log "Starting Tailscale setup..."
-sudo tailscale up --accept-routes --advertise-exit-node=false --accept-dns=false
+sudo tailscale up --accept-routes --advertise-exit-node=false --advertise-routes=192.168.8.0/24 --accept-dns=false
 if [ $? -eq 0 ]; then
     log "Tailscale started successfully with local network access maintained"
 else
