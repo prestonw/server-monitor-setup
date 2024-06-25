@@ -10,8 +10,36 @@ log() {
 
 log "Script started"
 
-# Check if the script is running at all
-log "This is a test log to ensure the script is running."
+# Check DNS resolution
+log "Checking DNS resolution..."
+if ! nslookup google.com > /dev/null; then
+    log "DNS resolution failed. Please check your network configuration."
+    exit 1
+else
+    log "DNS resolution succeeded."
+fi
+
+# Check internet connectivity
+log "Checking internet connectivity..."
+if ! ping -c 4 8.8.8.8 > /dev/null; then
+    log "Internet connectivity check failed. Please check your network connection."
+    exit 1
+else
+    log "Internet connectivity check succeeded."
+fi
+
+# Check DNS resolution and connectivity to GitHub
+log "Checking connectivity to GitHub..."
+if ! ping -c 4 github.com > /dev/null; then
+    log "Unable to reach GitHub. Please check your DNS settings or internet connectivity."
+    log "To resolve this issue, ensure that your DNS server is properly configured in /etc/resolv.conf."
+    log "You can manually set the DNS server by adding the following lines to /etc/resolv.conf:"
+    log "nameserver 8.8.8.8"
+    log "nameserver 8.8.4.4"
+    exit 1
+else
+    log "Successfully reached GitHub."
+fi
 
 # Update the package list
 log "Updating package list..."
@@ -112,8 +140,11 @@ else
     exit 1
 fi
 
+log "Stopping any running Go application..."
+pkill server
+
 log "Running Go application..."
-nohup ./server &
+nohup ./server > nohup.out 2>&1 &
 if [ $? -eq 0 ]; then
     log "Go application started"
 else
@@ -134,8 +165,11 @@ else
     exit 1
 fi
 
+log "Stopping any running Caddy server..."
+sudo pkill caddy
+
 log "Starting Caddy server..."
-sudo caddy run --config /etc/caddy/Caddyfile &
+sudo caddy run --config /etc/caddy/Caddyfile > caddy.log 2>&1 &
 if [ $? -eq 0 ]; then
     log "Caddy server started"
 else
