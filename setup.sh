@@ -10,25 +10,31 @@ show_progress() {
     echo -ne "]\n"
 }
 
+log() {
+    echo "$(date +'%Y-%m-%d %H:%M:%S') - $1"
+}
+
 # Update the package list
-echo "Updating package list..."
-sudo apt-get update -qq
+log "Updating package list..."
+sudo apt-get update -qq || { log "Failed to update package list"; exit 1; }
 
 # Install required packages with a progress bar
-echo "Installing required packages..."
+log "Installing required packages..."
 {
     sudo apt-get install -y golang-go caddy tailscale shellinabox
 } & show_progress $!
+wait $! || { log "Failed to install required packages"; exit 1; }
 
 # Enable and start Tailscale, with interactive setup
-echo "Starting Tailscale setup..."
-sudo tailscale up
+log "Starting Tailscale setup..."
+sudo tailscale up || { log "Failed to start Tailscale"; exit 1; }
 
 # Download and install Go web application
-echo "Setting up Go web application..."
-mkdir -p ~/go/src/monitor
-cd ~/go/src/monitor
+log "Setting up Go web application..."
+mkdir -p ~/go/src/monitor || { log "Failed to create Go source directory"; exit 1; }
+cd ~/go/src/monitor || { log "Failed to change directory to Go source"; exit 1; }
 
+log "Writing Go application source code..."
 cat <<EOL > main.go
 package main
 
@@ -64,26 +70,22 @@ func main() {
 }
 EOL
 
-# Build the Go application
-echo "Building Go application..."
-go build -o server main.go
+log "Building Go application..."
+go build -o server main.go || { log "Failed to build Go application"; exit 1; }
 
-# Run the Go application in the background
-echo "Running Go application..."
-nohup ./server &
+log "Running Go application..."
+nohup ./server & || { log "Failed to start Go application"; exit 1; }
 
-# Create Caddyfile
-echo "Configuring Caddy..."
+log "Configuring Caddy..."
 sudo tee /etc/caddy/Caddyfile > /dev/null <<EOL
 :80 {
     reverse_proxy /metrics localhost:8080
 }
 EOL
 
-# Run Caddy with the Caddyfile
-echo "Starting Caddy server..."
-sudo caddy run --config /etc/caddy/Caddyfile &
+log "Starting Caddy server..."
+sudo caddy run --config /etc/caddy/Caddyfile & || { log "Failed to start Caddy server"; exit 1; }
 
 # Output the server address
-tailscale_ip=$(tailscale ip -4)
-echo "Setup complete. Access your server metrics at http://$tailscale_ip:80/metrics"
+tailscale_ip=$(tailscale ip -4) || { log "Failed to get Tailscale IP"; exit 1; }
+log "Setup complete. Access your server metrics at http://$tailscale_ip:80/metrics"
