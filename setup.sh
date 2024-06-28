@@ -134,6 +134,7 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
     metrics := getMetrics()
     w.Header().Set("Cache-Control", "no-store")
     fmt.Fprintf(w, "%s", metrics)
+    log.Printf("Response for /metrics: %s", metrics)
 }
 
 func main() {
