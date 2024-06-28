@@ -187,7 +187,7 @@ fi
 
 log "Configuring Caddy..."
 sudo tee /etc/caddy/Caddyfile > /dev/null <<EOL
-$TAILSCALE_DOMAIN {
+$TAILSCALE_DOMAIN:8081 {
     log {
         output file /var/log/caddy/access.log
     }
@@ -221,7 +221,7 @@ fi
 
 # Output the server address
 if [ $? -eq 0 ]; then
-    log "Setup complete. Access your server metrics at https://$TAILSCALE_DOMAIN/metrics"
+    log "Setup complete. Access your server metrics at https://$TAILSCALE_DOMAIN:8081/metrics"
 else
     log "Failed to get Tailscale IP"
     exit 1
