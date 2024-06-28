@@ -90,7 +90,7 @@ else
 fi
 
 log "Downloading index.html..."
-curl -o index.html https://raw.githubusercontent.com/prestonw/server-monitor-setup/main/index.html
+curl -o index.html https://prestonw.github.io/server-monitor-setup/index.html
 if [ $? -eq 0 ]; then
     log "index.html downloaded successfully"
 else
