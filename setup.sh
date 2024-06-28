@@ -105,7 +105,6 @@ package main
 import (
     "fmt"
     "net/http"
-    "os"
     "os/exec"
     "runtime"
 )
@@ -121,6 +120,7 @@ func getMetrics() string {
 
 func metricsHandler(w http.ResponseWriter, r *http.Request) {
     metrics := getMetrics()
+    w.Header().Set("Cache-Control", "no-store")
     fmt.Fprintf(w, "%s", metrics)
 }
 
