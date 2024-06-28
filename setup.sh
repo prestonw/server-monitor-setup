@@ -72,7 +72,7 @@ else
 fi
 
 # Fetch the Tailscale domain
-TAILSCALE_DOMAIN=$(tailscale status --json | jq -r '.Self.DNSName')
+TAILSCALE_DOMAIN=$(tailscale status --json | jq -r '.Self.DNSName' | sed 's/\.$//')
 if [ $? -eq 0 ]; then
     log "Fetched Tailscale domain: $TAILSCALE_DOMAIN"
 else
@@ -215,7 +215,7 @@ fi
 
 # Output the server address
 if [ $? -eq 0 ]; then
-    log "Setup complete. Access your server metrics at https://$TAILSCALE_DOMAIN/"
+    log "Setup complete. Access your server metrics at https://$TAILSCALE_DOMAIN/metrics"
 else
     log "Failed to get Tailscale IP"
     exit 1
