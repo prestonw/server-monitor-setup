@@ -71,6 +71,15 @@ else
     exit 1
 fi
 
+# Fetch the Tailscale domain
+TAILSCALE_DOMAIN=$(tailscale status --json | jq -r '.Self.DNSName')
+if [ $? -eq 0 ]; then
+    log "Fetched Tailscale domain: $TAILSCALE_DOMAIN"
+else
+    log "Failed to fetch Tailscale domain"
+    exit 1
+fi
+
 # Download and install Go web application
 log "Setting up Go web application..."
 mkdir -p ~/go/src/monitor
@@ -104,6 +113,7 @@ package main
 
 import (
     "fmt"
+    "log"
     "net/http"
     "os/exec"
     "runtime"
@@ -127,6 +137,7 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
     http.HandleFunc("/metrics", metricsHandler)
     http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        log.Println("Serving index.html")
         http.ServeFile(w, r, "index.html")
     })
     port := "8080"
@@ -173,7 +184,7 @@ fi
 
 log "Configuring Caddy..."
 sudo tee /etc/caddy/Caddyfile > /dev/null <<EOL
-:80 {
+$TAILSCALE_DOMAIN {
     reverse_proxy / localhost:8080
 }
 EOL
@@ -203,9 +214,8 @@ else
 fi
 
 # Output the server address
-tailscale_ip=$(tailscale ip -4)
 if [ $? -eq 0 ]; then
-    log "Setup complete. Access your server metrics at http://$tailscale_ip:80/"
+    log "Setup complete. Access your server metrics at https://$TAILSCALE_DOMAIN/"
 else
     log "Failed to get Tailscale IP"
     exit 1
