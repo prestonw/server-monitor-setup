@@ -123,12 +123,14 @@ func getMetrics() string {
     cmd := exec.Command("top", "-b", "-n", "1")
     out, err := cmd.CombinedOutput()
     if err != nil {
+        log.Printf("Error executing command: %v\n", err)
         return fmt.Sprintf("Error: %s\nOutput: %s", err, string(out))
     }
     return string(out)
 }
 
 func metricsHandler(w http.ResponseWriter, r *http.Request) {
+    log.Println("Received request for /metrics")
     metrics := getMetrics()
     w.Header().Set("Cache-Control", "no-store")
     fmt.Fprintf(w, "%s", metrics)
@@ -145,7 +147,7 @@ func main() {
         port = "8000"
     }
     fmt.Printf("Server running at http://localhost:%s/\n", port)
-    http.ListenAndServe(":"+port, nil)
+    log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 EOL
 if [ $? -eq 0 ]; then
@@ -185,6 +187,9 @@ fi
 log "Configuring Caddy..."
 sudo tee /etc/caddy/Caddyfile > /dev/null <<EOL
 $TAILSCALE_DOMAIN {
+    log {
+        output file /var/log/caddy/access.log
+    }
     reverse_proxy / localhost:8080
 }
 EOL
