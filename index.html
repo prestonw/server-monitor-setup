@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Server Metrics</title>
+    <script>
+        function fetchMetrics() {
+            fetch('/metrics')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('metrics').innerHTML = '<pre>' + data + '</pre>';
+                });
+        }
+        setInterval(fetchMetrics, 5000); // Refresh every 5 seconds
+        window.onload = fetchMetrics;
+    </script>
+</head>
+<body>
+    <h1>Server Metrics</h1>
+    <div id="metrics"></div>
+</body>
+</html>
