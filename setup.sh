@@ -101,10 +101,10 @@ import (
 )
 
 func getMetrics() string {
-    cmd := exec.Command("htop", "-n", "1")
+    cmd := exec.Command("top", "-b", "-n", "1")
     out, err := cmd.CombinedOutput()
     if err != nil {
-        return fmt.Sprintf("Error: %s", err)
+        return fmt.Sprintf("Error: %s\nOutput: %s", err, string(out))
     }
     return string(out)
 }
