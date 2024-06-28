@@ -5,9 +5,18 @@
     <script>
         function fetchMetrics() {
             fetch('/metrics')
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.text();
+                })
                 .then(data => {
                     document.getElementById('metrics').innerHTML = '<pre>' + data + '</pre>';
+                    console.log('Metrics updated:', data);
+                })
+                .catch(error => {
+                    console.error('There has been a problem with your fetch operation:', error);
                 });
         }
         setInterval(fetchMetrics, 5000); // Refresh every 5 seconds
