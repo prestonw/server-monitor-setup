@@ -89,6 +89,15 @@ else
     exit 1
 fi
 
+log "Downloading index.html..."
+curl -o index.html https://raw.githubusercontent.com/prestonw/server-monitor-setup/main/index.html
+if [ $? -eq 0 ]; then
+    log "index.html downloaded successfully"
+else
+    log "Failed to download index.html"
+    exit 1
+fi
+
 log "Writing Go application source code..."
 cat <<EOL > main.go
 package main
@@ -96,6 +105,7 @@ package main
 import (
     "fmt"
     "net/http"
+    "os"
     "os/exec"
     "runtime"
 )
@@ -111,16 +121,19 @@ func getMetrics() string {
 
 func metricsHandler(w http.ResponseWriter, r *http.Request) {
     metrics := getMetrics()
-    fmt.Fprintf(w, "<pre>%s</pre>", metrics)
+    fmt.Fprintf(w, "%s", metrics)
 }
 
 func main() {
     http.HandleFunc("/metrics", metricsHandler)
+    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        http.ServeFile(w, r, "index.html")
+    })
     port := "8080"
     if runtime.GOOS == "windows" {
         port = "8000"
     }
-    fmt.Printf("Server running at http://localhost:%s/metrics\n", port)
+    fmt.Printf("Server running at http://localhost:%s/\n", port)
     http.ListenAndServe(":"+port, nil)
 }
 EOL
@@ -161,7 +174,7 @@ fi
 log "Configuring Caddy..."
 sudo tee /etc/caddy/Caddyfile > /dev/null <<EOL
 :80 {
-    reverse_proxy /metrics localhost:8080
+    reverse_proxy / localhost:8080
 }
 EOL
 if [ $? -eq 0 ]; then
@@ -192,7 +205,7 @@ fi
 # Output the server address
 tailscale_ip=$(tailscale ip -4)
 if [ $? -eq 0 ]; then
-    log "Setup complete. Access your server metrics at http://$tailscale_ip:80/metrics"
+    log "Setup complete. Access your server metrics at http://$tailscale_ip:80/"
 else
     log "Failed to get Tailscale IP"
     exit 1
