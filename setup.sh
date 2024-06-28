@@ -63,7 +63,7 @@ fi
 
 # Enable and start Tailscale, with specific settings to keep local network access
 log "Starting Tailscale setup..."
-sudo tailscale up --accept-dns=false --accept-routes --advertise-exit-node=false --advertise-routes=192.168.8.0/24 --ssh
+sudo tailscale up --reset --accept-dns=false --accept-routes --advertise-exit-node=false --advertise-routes=192.168.8.0/24 --ssh
 if [ $? -eq 0 ]; then
     log "Tailscale started successfully with local network access maintained"
 else
@@ -141,7 +141,13 @@ else
 fi
 
 log "Stopping any running Go application..."
-pkill server
+pkill -f server
+if [ $? -eq 0 ]; then
+    log "Any running Go application stopped"
+else
+    log "Failed to stop running Go application"
+    exit 1
+fi
 
 log "Running Go application..."
 nohup ./server > nohup.out 2>&1 &
@@ -166,7 +172,13 @@ else
 fi
 
 log "Stopping any running Caddy server..."
-sudo pkill caddy
+sudo pkill -f caddy
+if [ $? -eq 0 ]; then
+    log "Any running Caddy server stopped"
+else
+    log "Failed to stop running Caddy server"
+    exit 1
+fi
 
 log "Starting Caddy server..."
 sudo caddy run --config /etc/caddy/Caddyfile > caddy.log 2>&1 &
