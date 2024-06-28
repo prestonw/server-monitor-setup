@@ -53,7 +53,7 @@ fi
 
 # Install required packages with a progress bar
 log "Installing required packages..."
-sudo apt-get install -y golang-go caddy tailscale shellinabox
+sudo apt-get install -y golang-go caddy tailscale shellinabox jq
 if [ $? -eq 0 ]; then
     log "Packages installed successfully"
 else
