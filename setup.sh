@@ -206,12 +206,35 @@ else
     exit 1
 fi
 
-log "Reloading Caddy server..."
-sudo caddy reload --config /etc/caddy/Caddyfile
+log "Formatting Caddyfile..."
+sudo caddy fmt --overwrite /etc/caddy/Caddyfile
 if [ $? -eq 0 ]; then
-    log "Caddy server reloaded"
+    log "Caddyfile formatted"
 else
-    log "Failed to reload Caddy server"
+    log "Failed to format Caddyfile"
+    exit 1
+fi
+
+log "Stopping any running Caddy server..."
+CADDY_PID=$(pgrep -f "caddy run")
+if [ ! -z "$CADDY_PID" ]; then
+    sudo kill "$CADDY_PID"
+    if [ $? -eq 0 ]; then
+        log "Caddy server stopped successfully"
+    else
+        log "Failed to stop Caddy server"
+        exit 1
+    fi
+else
+    log "No running Caddy server found"
+fi
+
+log "Starting Caddy server..."
+sudo caddy run --config /etc/caddy/Caddyfile > caddy.log 2>&1 &
+if [ $? -eq 0 ]; then
+    log "Caddy server started"
+else
+    log "Failed to start Caddy server"
     exit 1
 fi
 
