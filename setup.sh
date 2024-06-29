@@ -168,12 +168,17 @@ else
 fi
 
 log "Stopping any running Go application..."
-pkill -f server
-if [ $? -eq 0 ]; then
-    log "Any running Go application stopped"
+GO_PID=$(pgrep -f "./server")
+if [ ! -z "$GO_PID" ]; then
+    kill "$GO_PID"
+    if [ $? -eq 0 ]; then
+        log "Go application stopped successfully"
+    else
+        log "Failed to stop Go application"
+        exit 1
+    fi
 else
-    log "Failed to stop running Go application"
-    exit 1
+    log "No running Go application found"
 fi
 
 log "Running Go application..."
@@ -201,21 +206,12 @@ else
     exit 1
 fi
 
-log "Stopping any running Caddy server..."
-sudo pkill -f caddy
+log "Reloading Caddy server..."
+sudo caddy reload --config /etc/caddy/Caddyfile
 if [ $? -eq 0 ]; then
-    log "Any running Caddy server stopped"
+    log "Caddy server reloaded"
 else
-    log "Failed to stop running Caddy server"
-    exit 1
-fi
-
-log "Starting Caddy server..."
-sudo caddy run --config /etc/caddy/Caddyfile > caddy.log 2>&1 &
-if [ $? -eq 0 ]; then
-    log "Caddy server started"
-else
-    log "Failed to start Caddy server"
+    log "Failed to reload Caddy server"
     exit 1
 fi
 
